@@ -19,6 +19,7 @@ package martini
 
 import (
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"reflect"
