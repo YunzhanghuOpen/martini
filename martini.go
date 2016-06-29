@@ -87,7 +87,7 @@ func (m *Martini) RunOnAddr(addr string) {
 }
 
 // Run the http server on a given listener
-func (m *Martini) RunOnAddr(l net.Listener) {
+func (m *Martini) RunOnListener(l net.Listener) {
 	// TODO: Should probably be implemented using a new instance of http.Server in place of
 	// calling http.ListenAndServer directly, so that it could be stored in the martini struct for later use.
 	// This would also allow to improve testing when a custom host and port are passed.
