@@ -93,7 +93,7 @@ func (m *Martini) RunOnListener(l net.Listener) {
 	// This would also allow to improve testing when a custom host and port are passed.
 
 	logger := m.Injector.Get(reflect.TypeOf(m.logger)).Interface().(*log.Logger)
-	logger.Printf("listening on %s (%s)\n", addr, Env)
+	logger.Printf("listening on %s (%s)\n", l.Addr(), Env)
 	logger.Fatalln(http.Serve(l, m))
 }
 
