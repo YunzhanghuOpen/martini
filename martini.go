@@ -138,6 +138,20 @@ func Classic() *ClassicMartini {
 	return &ClassicMartini{m, r}
 }
 
+// Add msgQ and for msg report
+func InfluxM() *ClassicMartini {
+	r := NewRouter()
+	m := New()
+	var msgQ = make(chan interface{})
+	m.Map(msgQ)
+	m.Use(InfluxLogger())
+	m.Use(Recovery())
+	m.Use(Static("public"))
+	m.MapTo(r, (*Routes)(nil))
+	m.Action(r.Handle)
+	return &ClassicMartini{m, r}
+}
+
 // Handler can be any callable function. Martini attempts to inject services into the handler's argument list.
 // Martini will panic if an argument could not be fullfilled via dependency injection.
 type Handler interface{}
