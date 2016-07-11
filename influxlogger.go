@@ -4,16 +4,17 @@ import (
     "fmt"
     "log"
     "net/http"
-    "time"
     "reflect"
+    "strconv"
+    "time"
 
-    "redpacket"
     "github.com/influxdata/influxdb/client/v2"
+    "redpacket"
 )
 
 // Logger returns a middleware handler that logs the request as it goes in and the response as it goes out.
 func InfluxLogger() Handler {
-    return func(res http.ResponseWriter, req *http.Request, c Context, log *log.Logger, msgQ chan interface{}) {
+    return func(res http.ResponseWriter, req *http.Request, c Context, log *log.Logger, msgQ chan *client.Point) {
         start := time.Now()
 
         addr := req.Header.Get("X-Real-IP")
@@ -33,44 +34,89 @@ func InfluxLogger() Handler {
         log.Printf("Completed %v %s in %v\n", rw.Status(), http.StatusText(rw.Status()), latency)
 
         // TODO(yiyang): test concurrent
-        val := c.Get(reflect.TypeOf(&redpacket.Token{}))
         var token *redpacket.Token
+        val := c.Get(reflect.TypeOf(token))
         if val.IsValid() {
             token = val.Interface().(*redpacket.Token)
         } else {
             token = nil
         }
 
+        var errCode int32
+        val = c.Get(reflect.TypeOf(errCode))
+        if val.IsValid() {
+            errCode = val.Interface().(int32)
+        } else {
+            errCode = -1111 // magic number
+        }
+
+        var receipt *redpacket.Receipt
+        if req.URL.Path == `/api/hongbao/receive` {
+            val = c.Get(reflect.TypeOf(receipt))
+            if val.IsValid() {
+                receipt = val.Interface().(*redpacket.Receipt)
+            } else {
+                receipt = nil
+            }
+        }
+
         go func() {
             var tags map[string]string
             var fields map[string]interface{}
+
+            tags = map[string]string{
+                "Req":       req.URL.Path,
+                "IP":        addr,
+                "RequestID": req.Header.Get("request-id"),
+                "ErrCode":   fmt.Sprintf("%d", errCode),
+            }
+
+            fields = map[string]interface{}{
+                "Status":  rw.Status(),
+                "Latency": latency.Nanoseconds() / 1e3,
+                "UA":      req.Header.Get("User-Agent"),
+                "Version": req.Header.Get("version"),
+            }
+
             if token != nil {
-                tags = map[string]string{
-                    "bind_uid":  fmt.Sprintf("%d", token.Base.BindUID),
-                    "rp_uid":    fmt.Sprintf("%d", token.Ext.RedpacketUID),
-                    "real_uid":  fmt.Sprintf("%d", token.Ext.RealUID),
-                    "dealer_id": fmt.Sprintf("%d", token.Base.DealerID),
-                    "req":       req.URL.Path,
-                    "ip":        addr,
-                }
+                tags["DealerID"] = fmt.Sprintf("%d", token.Base.DealerID)
+                tags["BindUID"] = fmt.Sprintf("%d", token.Base.BindUID)
+                tags["RealUID"] = fmt.Sprintf("%d", token.Ext.RealUID)
+                tags["RedpacketUID"] = fmt.Sprintf("%d", token.Ext.RedpacketUID)
 
-                fields = map[string]interface{}{
-                    "dealer_username": token.Ext.DealerUsername,
-                    "dealer_code":     token.Ext.DealerCode,
-                    "status":          rw.Status(),
-                    "latency":         latency,
-                }
-            } else {
-                tags = map[string]string{
-                    "req":       req.URL.Path,
-                    "ip":        addr,
-                }
+                fields["DealerUsername"] = token.Ext.DealerUsername
+                // fields["dealer_code"] = fmt.Sprintf("%d", token.Ext.DealerCode)
+            }
 
-                fields = map[string]interface{}{
-                    "status":          rw.Status(),
-                    "latency":         latency,
+            // 默认无多个参数
+            for k, v := range req.Form {
+                fields[k] = v[0]
+            }
+
+            for k, v := range req.PostForm {
+                fields[k] = v[0]
+            }
+
+            // TODO(yiyang): consider efficiency
+            if req.URL.Path == `/api/hongbao/send` {
+                if len(req.PostForm["Amount"]) > 0 {
+                    fields["I_AMOUNT"], _ = strconv.ParseFloat(req.PostForm["Amount"][0], 64)
+                }
+                if len(req.PostForm["Count"]) > 0 {
+                    fields["I_COUNT"], _ = strconv.ParseInt(req.PostForm["Count"][0], 10, 32)
+                } else {
+                    fields["I_COUNT"] = 1
                 }
             }
+
+            if receipt != nil { // `/api/hongbao/receive`
+                fields["MyAmount"] = receipt.MyAmount
+                fields["MyType"] = receipt.Type
+                fields["MyRedpacketID"] = receipt.RedpacketID
+                fields["SenderDealerUsername"] = receipt.ReceiveDetail.DealerUsername
+            }
+            delete(fields, "Avatar")
+            delete(fields, "Message")
 
             pt, err := client.NewPoint(
                 "api_usage",
@@ -83,7 +129,6 @@ func InfluxLogger() Handler {
                 return
             }
             msgQ <- pt
-            log.Println("Add point.. ", pt)
             return
         }()
     }

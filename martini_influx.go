@@ -18,20 +18,13 @@
 package martini
 
 import (
-    // "log"
-    // "net"
-    // "net/http"
-    // "os"
-    // "reflect"
-
-    // "github.com/codegangsta/inject"
     "github.com/influxdata/influxdb/client/v2"
     "github.com/golang/glog"
 )
 
 const (
     DB_NAME string = "ApiReport"
-    BATCH_SIZE int = 3
+    BATCH_SIZE int = 15
 
 )
 // needs to create database systemstats
