@@ -25,6 +25,7 @@ import (
 const (
     DB_NAME string = "ApiReport"
     BATCH_SIZE int = 15
+    CHAN_CAP int = 1000
 
 )
 // needs to create database systemstats
@@ -55,7 +56,7 @@ func ReportPoint(c client.Client, msgsQ chan *client.Point) {
 func InfluxM(c client.Client) *ClassicMartini {
     r := NewRouter()
     m := New()
-    var msgQ = make(chan *client.Point)
+    var msgQ = make(chan *client.Point, CHAN_CAP)
     m.Map(msgQ)
     m.Use(InfluxLogger())
     m.Use(Recovery())

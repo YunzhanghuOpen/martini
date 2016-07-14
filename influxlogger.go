@@ -128,7 +128,13 @@ func InfluxLogger() Handler {
                 log.Println("Error: NewPoint failed, err=", err)
                 return
             }
-            msgQ <- pt
+
+            if len(msgQ) < CHAN_CAP {
+                msgQ <- pt    
+            } else {
+                glog.Warning("msgQ full, lossing points")
+            }
+            
             return
         }()
     }
