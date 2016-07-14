@@ -132,7 +132,7 @@ func InfluxLogger() Handler {
             if len(msgQ) < CHAN_CAP {
                 msgQ <- pt    
             } else {
-                glog.Warning("msgQ full, lossing points")
+                log.Println("Warning: msgQ full, lossing points!")
             }
             
             return
