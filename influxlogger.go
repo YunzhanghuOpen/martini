@@ -100,19 +100,24 @@ func InfluxLogger() Handler {
             // TODO(yiyang): consider efficiency
             if req.URL.Path == `/api/hongbao/send` {
                 if len(req.PostForm["Amount"]) > 0 {
-                    fields["I_AMOUNT"], _ = strconv.ParseFloat(req.PostForm["Amount"][0], 64)
+                    fields["SAMOUNT"], _ = strconv.ParseFloat(req.PostForm["Amount"][0], 64)
                 }
                 if len(req.PostForm["Count"]) > 0 {
-                    fields["I_COUNT"], _ = strconv.ParseInt(req.PostForm["Count"][0], 10, 32)
+                    fields["SCOUNT"], _ = strconv.ParseInt(req.PostForm["Count"][0], 10, 32)
                 } else {
-                    fields["I_COUNT"] = 1
+                    fields["SCOUNT"] = 1
+                }
+            } else if req.URL.Path == `/api/hongbao/transfer` {
+                if len(req.PostForm["Amount"]) > 0 {
+                    fields["TAMOUNT"], _ = strconv.ParseFloat(req.PostForm["Amount"][0], 64)
                 }
             }
 
+
             if receipt != nil { // `/api/hongbao/receive`
-                fields["MyAmount"] = receipt.MyAmount
-                fields["MyType"] = receipt.Type
-                fields["MyRedpacketID"] = receipt.RedpacketID
+                fields["RAmount"] = receipt.MyAmount
+                fields["RType"] = receipt.Type
+                fields["RRedpacketID"] = receipt.RedpacketID
                 fields["SenderDealerUsername"] = receipt.ReceiveDetail.DealerUsername
             }
             delete(fields, "Avatar")
