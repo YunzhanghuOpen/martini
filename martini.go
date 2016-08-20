@@ -25,6 +25,7 @@ import (
 	"reflect"
 
 	"github.com/codegangsta/inject"
+	"github.com/facebookgo/grace/gracehttp"
 )
 
 // Martini represents the top level web application. inject.Injector methods can be invoked to map services on a global level.
@@ -96,6 +97,20 @@ func (m *Martini) RunOnListener(l net.Listener) {
 	logger := m.Injector.Get(reflect.TypeOf(m.logger)).Interface().(*log.Logger)
 	logger.Printf("listening on %s (%s)\n", l.Addr(), Env)
 	logger.Fatalln(http.Serve(l, m))
+}
+
+// Use gracehttp to run the http server on a given host and port.
+func (m *Martini) RunOnGrace(addr string) {
+	// TODO: Should probably be implemented using a new instance of http.Server in place of
+	// calling http.ListenAndServer directly, so that it could be stored in the martini struct for later use.
+	// This would also allow to improve testing when a custom host and port are passed.
+
+	logger := m.Injector.Get(reflect.TypeOf(m.logger)).Interface().(*log.Logger)
+	logger.Printf("listening on %s (%s)\n", addr, Env)
+
+	gracehttp.Serve(
+		&http.Server{Addr: addr, Handler: m})
+
 }
 
 // Run the http server. Listening on os.GetEnv("PORT") or 3000 by default.
