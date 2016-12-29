@@ -11,20 +11,24 @@ func Logger() Handler {
 	return func(res http.ResponseWriter, req *http.Request, c Context, log *log.Logger) {
 		start := time.Now()
 
-		addr := req.Header.Get("X-Real-IP")
-		if addr == "" {
-			addr = req.Header.Get("X-Forwarded-For")
-			if addr == "" {
-				addr = req.RemoteAddr
+		Ip = req.Header.Get("X-Slb-Forwarded-For")
+		if Ip == "" {
+			Ip = req.Header.Get("X-Nginx-Forwarded-For")
+			if Ip == "" {
+				Ip = req.Header.Get("X-Forwarded-For")
+				if Ip == "" {
+					Ip = req.RemoteAddr
+				}
 			}
 		}
+
 		requestId := req.Header.Get("request-id")
 
-		log.Printf("Started %s %s for %s %s", req.Method, req.URL.Path, addr, requestId)
+		log.Printf("Started %s %s for %s %s", req.Method, req.URL.Path, Ip, requestId)
 
 		rw := res.(ResponseWriter)
 		c.Next()
 
-		log.Printf("Completed %v %s %s %s %s in %v\n", rw.Status(), http.StatusText(rw.Status()), requestId, req.Method, req.URL.Path, time.Since(start).Seconds())
+		log.Printf("Completed %v %s %s %s %s %s in %v\n", rw.Status(), http.StatusText(rw.Status()), requestId, req.Method, req.URL.Path, Ip, time.Since(start).Seconds())
 	}
 }
