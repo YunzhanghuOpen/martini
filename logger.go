@@ -18,12 +18,13 @@ func Logger() Handler {
 				addr = req.RemoteAddr
 			}
 		}
+		requestId := req.Header.Get("request-id")
 
-		log.Printf("Started %s %s for %s", req.Method, req.URL.Path, addr)
+		log.Printf("Started %s %s for %s %s", req.Method, req.URL.Path, addr, requestId)
 
 		rw := res.(ResponseWriter)
 		c.Next()
 
-		log.Printf("Completed %v %s in %v\n", rw.Status(), http.StatusText(rw.Status()), time.Since(start))
+		log.Printf("Completed %v %s %s in %v\n", rw.Status(), http.StatusText(rw.Status()), requestId, time.Since(start))
 	}
 }
