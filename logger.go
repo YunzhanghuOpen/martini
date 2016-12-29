@@ -11,7 +11,7 @@ func Logger() Handler {
 	return func(res http.ResponseWriter, req *http.Request, c Context, log *log.Logger) {
 		start := time.Now()
 
-		Ip = req.Header.Get("X-Slb-Forwarded-For")
+		Ip := req.Header.Get("X-Slb-Forwarded-For")
 		if Ip == "" {
 			Ip = req.Header.Get("X-Nginx-Forwarded-For")
 			if Ip == "" {
