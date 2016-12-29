@@ -18,6 +18,7 @@
 package martini
 
 import (
+	"flag"
 	"log"
 	"net"
 	"net/http"
@@ -27,6 +28,11 @@ import (
 	"github.com/codegangsta/inject"
 	"github.com/facebookgo/grace/gracehttp"
 )
+
+var AccessLogPath string
+func init() {
+	flag.StringVar(&AccessLogPath, "acclog", "logs/access.log", "access log path")
+}
 
 // Martini represents the top level web application. inject.Injector methods can be invoked to map services on a global level.
 type Martini struct {
@@ -38,7 +44,8 @@ type Martini struct {
 
 // New creates a bare bones Martini instance. Use this method if you want to have full control over the middleware that is used.
 func New() *Martini {
-	m := &Martini{Injector: inject.New(), action: func() {}, logger: log.New(os.Stdout, "[martini] ", 0)}
+	file, _ = os.Create(AccessLogPath)
+	m := &Martini{Injector: inject.New(), action: func() {}, logger: log.New(file, "[martini] ", 0)}
 	m.Map(m.logger)
 	m.Map(defaultReturnHandler())
 	return m
