@@ -23,6 +23,9 @@ func Logger() Handler {
 		}
 
 		requestId := req.Header.Get("request-id")
+		if requestId == "" {
+			requestId = "."
+		}
 
 		log.Printf("Started %s %s for %s %s", req.Method, req.URL.Path, Ip, requestId)
 
