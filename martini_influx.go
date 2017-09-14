@@ -18,8 +18,8 @@
 package martini
 
 import (
+    "github.com/YunzhanghuOpen/glog"
     "github.com/influxdata/influxdb/client/v2"
-    "github.com/golang/glog"
 )
 
 const (
